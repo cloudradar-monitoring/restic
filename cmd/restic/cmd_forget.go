@@ -107,7 +107,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	var jsonGroups []*ForgetGroup
 
 	if len(args) > 0 {
-		// When explicit snapshots args are given, remove them immediately.
+		// When explicit snapshots serverArgs are given, remove them immediately.
 		for _, sn := range snapshots {
 			removeSnIDs.Insert(*sn.ID())
 		}

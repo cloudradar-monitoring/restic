@@ -126,7 +126,7 @@ func verifyDirectoryContentsFI(t testing.TB, fs FS, dir string, want []os.FileIn
 		fi2 := entries[i]
 
 		if fi1.Name() != fi2.Name() {
-			t.Errorf("entry %d: wrong value for Name: want %q, got %q", i, fi1.Name(), fi2.Name())
+			t.Errorf("entry %d: wrong value for Path: want %q, got %q", i, fi1.Name(), fi2.Name())
 		}
 
 		if fi1.IsDir() != fi2.IsDir() {
@@ -165,11 +165,11 @@ func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.T
 	}
 
 	if path.Base(fi.Name()) != fi.Name() {
-		t.Errorf("Name() returned is not base, want %q, got %q", path.Base(fi.Name()), fi.Name())
+		t.Errorf("Path() returned is not base, want %q, got %q", path.Base(fi.Name()), fi.Name())
 	}
 
 	if fi.Name() != path.Base(filename) {
-		t.Errorf("Name() returned wrong value, want %q, got %q", path.Base(filename), fi.Name())
+		t.Errorf("Path() returned wrong value, want %q, got %q", path.Base(filename), fi.Name())
 	}
 }
 

@@ -123,7 +123,7 @@ func init() {
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
 	f.MarkDeprecated("hostname", "use --host")
 
-	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from `file` (can be combined with file args/can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from `file` (can be combined with file serverArgs/can be specified multiple times)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
@@ -362,8 +362,8 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		}
 	}
 
-	// merge files from files-from into normal args so we can reuse the normal
-	// args checks and have the ability to use both files-from and args at the
+	// merge files from files-from into normal serverArgs so we can reuse the normal
+	// serverArgs checks and have the ability to use both files-from and serverArgs at the
 	// same time
 	args = append(args, lines...)
 	if len(args) == 0 && !opts.Stdin {

@@ -1,0 +1,31 @@
+{{define "content"}}
+    <h1>Snapshots</h1>
+    <table id="customers">
+        <tr>
+            <th>ID</th>
+            <th>Time</th>
+            <th>Host</th>
+            <th>Tags</th>
+            <th>Paths</th>
+        </tr>
+        {{range $snapshot := .Snapshots}}
+            <tr>
+                <td>{{$snapshot.ShortID}}</td>
+                <td>{{$snapshot.Snapshot.Time.Format "2006-01-02 15:04:05"}}</td>
+                <td>{{$snapshot.Snapshot.Hostname}}</td>
+                <td>
+                    {{if $snapshot.Snapshot.Tags }}
+                        {{ joinStrings $snapshot.Snapshot.Tags "," }}
+                    {{end}}
+                </td>
+                <td>
+                    {{if $snapshot.Snapshot.Paths }}
+                        {{range $path := $snapshot.Snapshot.Paths}}
+                            {{ $path }} <br>
+                        {{end}}
+                    {{end}}
+                </td>
+            </tr>
+        {{end}}
+    </table>
+{{end}}
