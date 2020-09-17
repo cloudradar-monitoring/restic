@@ -14,7 +14,7 @@ import (
 
 func (c *Cache) filename(h restic.Handle) string {
 	if len(h.Name) < 2 {
-		panic("Name is empty or too short")
+		panic("Path is empty or too short")
 	}
 	subdir := h.Name[:2]
 	return filepath.Join(c.path, cacheLayoutPaths[h.Type], subdir, h.Name)

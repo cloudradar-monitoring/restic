@@ -55,7 +55,7 @@ func (h Handle) Valid() error {
 	}
 
 	if h.Name == "" {
-		return errors.New("invalid Name")
+		return errors.New("invalid Path")
 	}
 
 	return nil
