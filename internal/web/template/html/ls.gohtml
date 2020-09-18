@@ -1,0 +1,26 @@
+{{define "content"}}
+    <h1>Snapshot contents</h1>
+    <form method="get">
+        <div class="col-50 pad10">
+            <input class="mt-10" type="text" id="tag" name="tag" placeholder="Tag"
+                   value="{{if .Params.tag }}{{.Params.tag}}{{end}}">
+            <div id="emailHelp" class="field-description">
+                For multiple use comma separated values
+            </div>
+            <div class="mt-10">
+                <label>
+                    Long
+                    <input type="checkbox" name="long" {{if .Params.long }} checked="checked" {{end}}>
+                </label>
+                <label>
+                    Recursive
+                    <input type="checkbox" name="recursive" {{if .Params.recursive }} checked="checked" {{end}}>
+                </label>
+            </div>
+            <div class="clear"></div>
+            <a href="/ls" class="float-right button">Reset</a>
+            <input type="submit" value="Submit" class="float-right button mr-5">
+        </div>
+    </form>
+    {{ LsNodes }}
+{{end}}
