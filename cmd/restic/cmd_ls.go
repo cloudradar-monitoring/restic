@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/restic/restic/internal/web/request"
+	"github.com/restic/restic/internal/web/server"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -233,4 +238,37 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	return nil
+}
+
+func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
+	var buf bytes.Buffer
+
+	severGlobalOptions := convertServerConfigToGlobalOptions(serverConfig, &buf)
+
+	options := LsOptions{
+		ListLong:  request.GetBoolParam("long", r),
+		Recursive: request.GetBoolParam("recursive", r),
+		Tags:      request.GetTags("tag", r),
+	}
+
+	snapshotID := r.URL.Query().Get("id")
+
+	err = runLs(options, severGlobalOptions, []string{snapshotID})
+	if err != nil {
+		return
+	}
+
+	fmt.Println(buf.String())
+
+	lsNodes := make([]lsSnapshot, 0)
+	decoder := json.NewDecoder(&buf)
+	err = decoder.Decode(&lsNodes)
+
+	return struct {
+		LsNodes []lsSnapshot
+		Params  map[string]string
+	}{
+		LsNodes: lsNodes,
+		Params:  request.GetParams(r),
+	}, err
 }

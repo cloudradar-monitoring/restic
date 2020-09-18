@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/web/render"
-	"log"
 	"net/http"
 )
 
@@ -29,11 +28,6 @@ type Config struct {
 
 	Ctx context.Context
 
-	// verbosity is set as follows:
-	//  0 means: don't print any messages except errors, this is used when --quiet is specified
-	//  1 is the default: print essential messages
-	//  2 means: print more messages, report minor things, this is used when --verbose is specified
-	//  3 means: print very detailed debug messages, this is used when --verbose=2 is specified
 	Verbosity uint
 
 	Options []string
@@ -55,13 +49,13 @@ type HttpCmdEndpoint struct {
 func (e *HttpCmdEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	renderContext, err := e.Cmd(r, e.Config)
 	if err != nil {
-		log.Print(err)
+		handleError(err, w, http.StatusInternalServerError)
 		return
 	}
 
 	err = render.Render(e.Template, w, renderContext)
 	if err != nil {
-		log.Print(err)
+		handleError(err, w, http.StatusInternalServerError)
 		return
 	}
 }
@@ -73,7 +67,7 @@ type WebServer struct {
 func (ws *WebServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := render.Render("index", w, "")
 	if err != nil {
-		log.Print(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -89,4 +83,30 @@ func (ws *WebServer) Run(addr string, serverConfig Config) error {
 	}
 
 	return http.ListenAndServe(addr, nil)
+}
+
+func handleError(err error, w http.ResponseWriter, status int) {
+	title := ""
+	if status == 404 {
+		title = "Page not found"
+	} else if status == 400 {
+		title = "Bad request"
+	} else {
+		title = "Internal server error"
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(status)
+
+	fmt.Printf("failed to execute: %v\n", err)
+
+	err = render.Render("error", w, struct {
+		Err    error
+		Status int
+		Title  string
+	}{Err: err, Status: status, Title: title})
+	if err != nil {
+		http.Error(w, err.Error(), status)
+		return
+	}
 }

@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/restic/restic/internal/web/server"
 	"github.com/spf13/cobra"
-	"net/http"
+	"io"
 )
 
 const defaultPort = 6723
@@ -42,8 +40,13 @@ func runServer(gopts GlobalOptions, args []string) error {
 		Endpoints: []*server.HttpCmdEndpoint{
 			{
 				Path:     "/snapshots",
-				Cmd:      serveSnapshots,
+				Cmd:      runSnapshotsHttp,
 				Template: "snapshots",
+			},
+			{
+				Path:     "/ls",
+				Cmd:      runLsHttp,
+				Template: "ls",
 			},
 		},
 	}
@@ -74,12 +77,10 @@ func runServer(gopts GlobalOptions, args []string) error {
 	return websrv.Run(address, config)
 }
 
-func serveSnapshots(r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
-	var buf bytes.Buffer
-
+func convertServerConfigToGlobalOptions(serverConfig server.Config, writer io.Writer) GlobalOptions {
 	severGlobalOptions := GlobalOptions{}
 	severGlobalOptions.JSON = true
-	severGlobalOptions.stdout = &buf
+	severGlobalOptions.stdout = writer
 	severGlobalOptions.password = serverConfig.Password
 	severGlobalOptions.PasswordFile = serverConfig.PasswordFile
 	severGlobalOptions.Repo = serverConfig.Repo
@@ -100,19 +101,5 @@ func serveSnapshots(r *http.Request, serverConfig server.Config) (renderContext 
 	severGlobalOptions.Options = serverConfig.Options
 	severGlobalOptions.extended = serverConfig.Extended
 
-	err = runSnapshots(SnapshotOptions{}, severGlobalOptions, serverConfig.Args)
-	if err != nil {
-		return
-	}
-
-	snapshots := make([]Snapshot, 0)
-	decoder := json.NewDecoder(&buf)
-	err = decoder.Decode(&snapshots)
-	return struct {
-		Snapshots []Snapshot
-		Repo      string
-	}{
-		Snapshots: snapshots,
-		Repo:      severGlobalOptions.Repo,
-	}, err
+	return severGlobalOptions
 }
