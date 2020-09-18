@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/restic/restic/internal/web/request"
+	"github.com/restic/restic/internal/web/server"
 	"io"
+	"net/http"
 	"sort"
 	"strings"
 
@@ -345,4 +349,33 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 	}
 
 	return json.NewEncoder(stdout).Encode(snapshots)
+}
+
+func runSnapshotsHttp(r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
+	var buf bytes.Buffer
+
+	severGlobalOptions := convertServerConfigToGlobalOptions(serverConfig, &buf)
+
+	options := SnapshotOptions{
+		Hosts: request.GetCommaSepParams("host", r),
+		Paths: request.GetCommaSepParams("path", r),
+		Last:  request.GetBoolParam("last", r),
+		Tags:  request.GetTags("tag", r),
+	}
+
+	err = runSnapshots(options, severGlobalOptions, []string{})
+	if err != nil {
+		return
+	}
+
+	snapshots := make([]Snapshot, 0)
+	decoder := json.NewDecoder(&buf)
+	err = decoder.Decode(&snapshots)
+	return struct {
+		Snapshots []Snapshot
+		Params    map[string]string
+	}{
+		Snapshots: snapshots,
+		Params:    request.GetParams(r),
+	}, err
 }
