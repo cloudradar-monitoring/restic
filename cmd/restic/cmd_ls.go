@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/restic/restic/internal/web/render"
 	"github.com/restic/restic/internal/web/request"
 	"github.com/restic/restic/internal/web/server"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -258,17 +259,37 @@ func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext inter
 		return
 	}
 
-	fmt.Println(buf.String())
+	snapshot := lsSnapshot{}
+	lsNodes := make([]lsNode, 0)
 
-	lsNodes := make([]lsSnapshot, 0)
 	decoder := json.NewDecoder(&buf)
-	err = decoder.Decode(&lsNodes)
+	err = decoder.Decode(&snapshot)
+	if err != nil {
+		return
+	}
+
+	dirTree := render.Nodes{}
+	for {
+		var lsNd lsNode
+
+		err = decoder.Decode(&lsNd)
+		if err == io.EOF {
+			err = nil
+			break
+		}
+		if err != nil {
+			return renderContext, err
+		}
+		dirTree.Add(string(os.PathSeparator), lsNd.Path, lsNd.Name, lsNd.Type == "file")
+	}
 
 	return struct {
-		LsNodes []lsSnapshot
-		Params  map[string]string
+		LsSnapshot lsSnapshot
+		LsNodes    []lsNode
+		Params     map[string]string
 	}{
-		LsNodes: lsNodes,
-		Params:  request.GetParams(r),
+		LsSnapshot: snapshot,
+		LsNodes:    lsNodes,
+		Params:     request.GetParams(r),
 	}, err
 }

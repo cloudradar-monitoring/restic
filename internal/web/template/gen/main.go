@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"time"
 )
 
 // This program generates go files from html templates. It can be invoked by running `go generate internal/web/template/gen/main.go`
@@ -47,8 +46,7 @@ func generateTemplatesMap(templateNames []string) error {
 
 	err = t.Execute(f, struct {
 		TemplateNames []string
-		Timestamp     string
-	}{TemplateNames: templateNames, Timestamp: time.Now().String()})
+	}{TemplateNames: templateNames})
 
 	if err != nil {
 		return err
@@ -82,10 +80,9 @@ func generateTemplateFile(path string, info os.FileInfo) (string, error) {
 	}
 
 	err = t.Execute(f, struct {
-		Content   string
-		Name      string
-		Timestamp string
-	}{Content: string(content), Name: fileNameWithoutExt, Timestamp: time.Now().String()})
+		Content string
+		Name    string
+	}{Content: string(content), Name: fileNameWithoutExt})
 	if err != nil {
 		return "", err
 	}

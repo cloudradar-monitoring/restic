@@ -10,6 +10,11 @@ import (
 )
 
 func Render(name string, w io.Writer, data interface{}) error {
+	cssTemplateBody, ok := gohtml.TemplatesMap["css"]
+	if !ok {
+		return errors.New("unknown/unregistered template 'css'")
+	}
+
 	baseTemplateBody, ok := gohtml.TemplatesMap["base"]
 	if !ok {
 		return errors.New("unknown/unregistered template 'base'")
@@ -29,6 +34,11 @@ func Render(name string, w io.Writer, data interface{}) error {
 	}
 
 	pageTemplate, err = pageTemplate.Parse(baseTemplateBody)
+	if err != nil {
+		return err
+	}
+
+	pageTemplate, err = pageTemplate.Parse(cssTemplateBody)
 	if err != nil {
 		return err
 	}
