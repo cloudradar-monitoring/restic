@@ -1,14 +1,10 @@
 {{define "content"}}
-    <h1>Snapshot contents</h1>
+    <h1>Snapshot contents {{.SnapshotID}}</h1>
 
-    <div class="col-50 pad10">
+    <div class="mt-2">
         <form method="get">
-            <input class="mt-10" type="text" id="tag" name="tag" placeholder="Tag"
-                   value="{{if .Params.tag }}{{.Params.tag}}{{end}}">
-            <div id="emailHelp" class="field-description">
-                For multiple use comma separated values
-            </div>
-            <div class="mt-10">
+            <div class="col-50 mt-10">
+                <input type="hidden" value="{{ .Params.id }}" name="id">
                 <label>
                     Long
                     <input type="checkbox" name="long" {{if .Params.long }} checked="checked" {{end}}>
@@ -17,40 +13,23 @@
                     Recursive
                     <input type="checkbox" name="recursive" {{if .Params.recursive }} checked="checked" {{end}}>
                 </label>
+                <div class="mt-10">
+                    <label for="path">Path</label>
+                    <input type="text" id="tag" name="path" placeholder="path"
+                           value="{{if .Params.path }}{{.Params.path}}{{end}}">
+                </div>
             </div>
             <div class="clear"></div>
-            <a href="/ls" class="float-right button">Reset</a>
-            <input type="submit" value="Submit" class="float-right button mr-5">
+            <div class="mt-10">
+                <a href="/snapshots" class="button mr-5">Reset</a>
+                <input type="submit" value="Submit" class="button">
+            </div>
         </form>
     </div>
     <div class="clear"></div>
-    <div class="dirs">
+    <div class="dirs mt-10">
         <ul id="tree">
-            <li>
-                <input type="checkbox"/>
-                <span>folder11</span>
-                <ul>
-                    <li><span>file1</span></li>
-                    <li>
-                        <input type="checkbox"/>
-                        <span>folder11</span>
-                        <ul>
-                            <li><span>file111</span></li>
-                            <li><span>file112</span></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <input type="checkbox"/>
-                        <span>this is a long folder name</span>
-                        <ul>
-                            <li><span>this is a long file name</span></li>
-                        </ul>
-                    </li>
-                </ul>
-            </li>
-            <li><span>file1</span></li>
-            <li><span>file2</span></li>
-            <li><span>file12</span></li>
+            {{  .DirTree.Render }}
         </ul>
     </div>
 {{end}}

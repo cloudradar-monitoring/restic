@@ -5,6 +5,7 @@ package gohtml
 var TemplatesMap = map[string]string{
 	"base":      base,
 	"css":       css,
+	"dirtree":   dirtree,
 	"error":     error,
 	"index":     index,
 	"ls":        ls,

@@ -48,12 +48,18 @@ type HttpCmdEndpoint struct {
 
 func (e *HttpCmdEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	renderContext, err := e.Cmd(r, e.Config)
+
 	if err != nil {
-		handleError(err, w, http.StatusInternalServerError)
+		httpErr, ok := err.(HttpError)
+		if ok {
+			handleError(httpErr.Err, w, httpErr.ResponseCode)
+		} else {
+			handleError(err, w, http.StatusInternalServerError)
+		}
 		return
 	}
 
-	err = render.Render(e.Template, w, renderContext)
+	err = render.RenderWithLayout(e.Template, w, renderContext)
 	if err != nil {
 		handleError(err, w, http.StatusInternalServerError)
 		return
@@ -65,7 +71,7 @@ type WebServer struct {
 }
 
 func (ws *WebServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := render.Render("index", w, "")
+	err := render.RenderWithLayout("index", w, "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -100,7 +106,7 @@ func handleError(err error, w http.ResponseWriter, status int) {
 
 	fmt.Printf("failed to execute: %v\n", err)
 
-	err = render.Render("error", w, struct {
+	err = render.RenderWithLayout("error", w, struct {
 		Err    error
 		Status int
 		Title  string

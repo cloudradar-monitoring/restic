@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/restic/restic/internal/web/render"
 	"github.com/restic/restic/internal/web/request"
 	"github.com/restic/restic/internal/web/server"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -249,10 +251,29 @@ func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext inter
 	options := LsOptions{
 		ListLong:  request.GetBoolParam("long", r),
 		Recursive: request.GetBoolParam("recursive", r),
-		Tags:      request.GetTags("tag", r),
+	}
+
+	params := request.GetParams(r)
+	pathParam := r.URL.Query().Get("path")
+	if pathParam != "" {
+		pathParamUnescaped, err := url.QueryUnescape(pathParam)
+		if err != nil {
+			fmt.Printf("failed to process path param '%s', will ignore it: %v", pathParam)
+		} else {
+			options.Paths = append(options.Paths, pathParamUnescaped)
+			params["path"] = pathParamUnescaped
+		}
 	}
 
 	snapshotID := r.URL.Query().Get("id")
+	if snapshotID == "" {
+		err = server.HttpError{
+			ResponseCode: http.StatusBadRequest,
+			Err:          fmt.Errorf("no snapshot id is given in request"),
+		}
+		return
+	}
+	params["id"] = snapshotID
 
 	err = runLs(options, severGlobalOptions, []string{snapshotID})
 	if err != nil {
@@ -260,11 +281,11 @@ func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext inter
 	}
 
 	snapshot := lsSnapshot{}
-	lsNodes := make([]lsNode, 0)
 
 	decoder := json.NewDecoder(&buf)
 	err = decoder.Decode(&snapshot)
 	if err != nil {
+		err = fmt.Errorf("failed to decode '%s' to lsSnapshot struct: %w", buf.String(), err)
 		return
 	}
 
@@ -285,11 +306,13 @@ func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext inter
 
 	return struct {
 		LsSnapshot lsSnapshot
-		LsNodes    []lsNode
+		DirTree    render.Nodes
 		Params     map[string]string
+		SnapshotID string
 	}{
 		LsSnapshot: snapshot,
-		LsNodes:    lsNodes,
-		Params:     request.GetParams(r),
+		DirTree:    dirTree,
+		Params:     params,
+		SnapshotID: snapshotID,
 	}, err
 }
