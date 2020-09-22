@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"path"
 	"path/filepath"
 
@@ -65,7 +65,7 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string) error {
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string, stdOut io.Writer) error {
 
 	if tree == nil {
 		return fmt.Errorf("called with a nil tree")
@@ -84,7 +84,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		if err := checkStdoutTar(); err != nil {
 			return err
 		}
-		return dump.WriteTar(ctx, repo, tree, "/", os.Stdout)
+		return dump.WriteTar(ctx, repo, tree, "/", stdOut)
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
@@ -94,13 +94,13 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		if node.Name == pathComponents[0] {
 			switch {
 			case l == 1 && dump.IsFile(node):
-				return dump.GetNodeData(ctx, os.Stdout, repo, node)
+				return dump.GetNodeData(ctx, stdOut, repo, node)
 			case l > 1 && dump.IsDir(node):
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:])
+				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], stdOut)
 			case dump.IsDir(node):
 				if err := checkStdoutTar(); err != nil {
 					return err
@@ -109,7 +109,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return err
 				}
-				return dump.WriteTar(ctx, repo, subtree, item, os.Stdout)
+				return dump.WriteTar(ctx, repo, subtree, item, stdOut)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case !dump.IsFile(node):
@@ -176,7 +176,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	err = printFromTree(ctx, tree, repo, "/", splittedPath)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath, gopts.stdout)
 	if err != nil {
 		Exitf(2, "cannot dump file: %v", err)
 	}
