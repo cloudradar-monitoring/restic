@@ -37,7 +37,7 @@ type Config struct {
 	Args []string
 }
 
-type HttpCmdFunc func(r *http.Request, serverConfig Config) (renderContext interface{}, err error)
+type HttpCmdFunc func(w http.ResponseWriter, r *http.Request, serverConfig Config) (renderContext interface{}, err error)
 
 type HttpCmdEndpoint struct {
 	Path     string
@@ -47,7 +47,7 @@ type HttpCmdEndpoint struct {
 }
 
 func (e *HttpCmdEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	renderContext, err := e.Cmd(r, e.Config)
+	renderContext, err := e.Cmd(w, r, e.Config)
 
 	if err != nil {
 		httpErr, ok := err.(HttpError)
@@ -56,6 +56,10 @@ func (e *HttpCmdEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			handleError(err, w, http.StatusInternalServerError)
 		}
+		return
+	}
+
+	if e.Template == "" {
 		return
 	}
 

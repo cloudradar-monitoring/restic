@@ -350,7 +350,7 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 	return json.NewEncoder(stdout).Encode(snapshots)
 }
 
-func runSnapshotsHttp(r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
+func runSnapshotsHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
 	var buf bytes.Buffer
 
 	severGlobalOptions := convertServerConfigToGlobalOptions(serverConfig, &buf)

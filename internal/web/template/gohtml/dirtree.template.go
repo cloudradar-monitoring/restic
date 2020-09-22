@@ -5,11 +5,13 @@ package gohtml
 var dirtree = `<li>
     {{ if .Node.IsDir }}
         <input type="checkbox"/>
+        <span>{{ .Node.Name }}</span>
+    {{ else }}
+        <span><a href="/dump?id={{.Data.Params.id}}&path={{ .Node.Path }}&size={{ .Node.Size }}">{{ .Node.Name }}</a></span>
     {{ end }}
-    <span>{{ .Node.Name }}</span>
     {{ if .Node.IsDir }}
         <ul>
-            {{ .Node.Nodes.Render }}
+            {{ .Node.Nodes.Render .Data }}
         </ul>
     {{ end }}
 </li>

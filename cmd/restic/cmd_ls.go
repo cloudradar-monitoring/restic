@@ -243,7 +243,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
+func runLsHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
 	var buf bytes.Buffer
 
 	severGlobalOptions := convertServerConfigToGlobalOptions(serverConfig, &buf)
@@ -301,7 +301,19 @@ func runLsHttp(r *http.Request, serverConfig server.Config) (renderContext inter
 		if err != nil {
 			return renderContext, err
 		}
-		dirTree.Add(string(os.PathSeparator), lsNd.Path, lsNd.Name, lsNd.Type == "file")
+		dirTree.Add(render.PathItem{
+			Name:       lsNd.Name,
+			Type:       lsNd.Type,
+			Path:       lsNd.Path,
+			UID:        lsNd.UID,
+			GID:        lsNd.GID,
+			Size:       lsNd.Size,
+			Mode:       lsNd.Mode,
+			ModTime:    lsNd.ModTime,
+			AccessTime: lsNd.AccessTime,
+			ChangeTime: lsNd.ChangeTime,
+			StructType: lsNd.StructType,
+		})
 	}
 
 	return struct {
