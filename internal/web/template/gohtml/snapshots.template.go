@@ -50,7 +50,7 @@ var snapshots = `{{define "content"}}
                 <td>
                     {{if $snapshot.Snapshot.Paths }}
                         {{range $path := $snapshot.Snapshot.Paths}}
-                            {{ $path }} <br>
+                            <a href="/ls?long=1&id={{ $snapshot.ShortID }}&path={{ escapeUrl $path }}">{{ $path }}</a> <br>
                         {{end}}
                     {{end}}
                 </td>

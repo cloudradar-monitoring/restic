@@ -1,0 +1,11 @@
+<li>
+    {{ if .Node.IsDir }}
+        <input type="checkbox"/>
+    {{ end }}
+    <span>{{ .Node.Name }}</span>
+    {{ if .Node.IsDir }}
+        <ul>
+            {{ .Node.Nodes.Render }}
+        </ul>
+    {{ end }}
+</li>
