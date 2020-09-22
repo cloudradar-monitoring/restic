@@ -48,6 +48,11 @@ func runServer(gopts GlobalOptions, args []string) error {
 				Cmd:      runLsHttp,
 				Template: "ls",
 			},
+			{
+				Path:     "/dump",
+				Cmd:      runDumpHttp,
+				Template: "",
+			},
 		},
 	}
 

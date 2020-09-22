@@ -33,7 +33,7 @@ var ls = `{{define "content"}}
     <div class="clear"></div>
     <div class="dirs mt-10">
         <ul id="tree">
-            {{  .DirTree.Render }}
+            {{  .DirTree.Render . }}
         </ul>
     </div>
 {{end}}

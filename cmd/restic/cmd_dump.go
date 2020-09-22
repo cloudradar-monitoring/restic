@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/restic/restic/internal/web/server"
 	"io"
+	"net/http"
 	"path"
 	"path/filepath"
 
@@ -189,4 +191,41 @@ func checkStdoutTar() error {
 		return fmt.Errorf("stdout is the terminal, please redirect output")
 	}
 	return nil
+}
+
+func runDumpHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Config) (renderContext interface{}, err error) {
+	severGlobalOptions := convertServerConfigToGlobalOptions(serverConfig, w)
+
+	snapshotID := r.URL.Query().Get("id")
+	if snapshotID == "" {
+		err = server.HttpError{
+			ResponseCode: http.StatusBadRequest,
+			Err:          fmt.Errorf("no snapshot id is given in request"),
+		}
+		return
+	}
+
+	filePath := r.URL.Query().Get("path")
+	if filePath == "" {
+		err = server.HttpError{
+			ResponseCode: http.StatusBadRequest,
+			Err:          fmt.Errorf("no path is given in request"),
+		}
+		return
+	}
+
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(filePath))
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	size := r.URL.Query().Get("size")
+	if size != "" {
+		w.Header().Set("Content-Length", size)
+	}
+
+	err = runDump(DumpOptions{}, severGlobalOptions, []string{snapshotID, filePath})
+	if err != nil {
+		return
+	}
+
+	return nil, nil
 }
