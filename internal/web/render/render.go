@@ -13,14 +13,34 @@ import (
 )
 
 func RenderWithLayout(name string, w io.Writer, data interface{}) error {
+	bootstrapTemplateBody, ok := gohtml.TemplatesMap["bootstrap.css"]
+	if !ok {
+		return errors.New("unknown/unregistered template 'bootstrap.css'")
+	}
+
 	cssTemplateBody, ok := gohtml.TemplatesMap["css"]
 	if !ok {
 		return errors.New("unknown/unregistered template 'css'")
 	}
 
+	jqueryTemplateBody, ok := gohtml.TemplatesMap["jqueryjs"]
+	if !ok {
+		return errors.New("unknown/unregistered template 'jqueryjs'")
+	}
+
+	jsTemplateBody, ok := gohtml.TemplatesMap["js"]
+	if !ok {
+		return errors.New("unknown/unregistered template 'js'")
+	}
+
 	baseTemplateBody, ok := gohtml.TemplatesMap["base"]
 	if !ok {
 		return errors.New("unknown/unregistered template 'base'")
+	}
+
+	bootstrapJsBody, ok := gohtml.TemplatesMap["bootstrapjs"]
+	if !ok {
+		return errors.New("unknown/unregistered template 'bootstrapJsBody'")
 	}
 
 	templateBody, ok := gohtml.TemplatesMap[name]
@@ -42,6 +62,26 @@ func RenderWithLayout(name string, w io.Writer, data interface{}) error {
 	}
 
 	pageTemplate, err = pageTemplate.Parse(cssTemplateBody)
+	if err != nil {
+		return err
+	}
+
+	pageTemplate, err = pageTemplate.Parse(bootstrapTemplateBody)
+	if err != nil {
+		return err
+	}
+
+	pageTemplate, err = pageTemplate.Parse(jqueryTemplateBody)
+	if err != nil {
+		return err
+	}
+
+	pageTemplate, err = pageTemplate.Parse(jsTemplateBody)
+	if err != nil {
+		return err
+	}
+
+	pageTemplate, err = pageTemplate.Parse(bootstrapJsBody)
 	if err != nil {
 		return err
 	}
