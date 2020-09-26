@@ -321,10 +321,12 @@ func runLsHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Confi
 		DirTree    render.Nodes
 		Params     map[string]string
 		SnapshotID string
+		Curpath    string
 	}{
 		LsSnapshot: snapshot,
 		DirTree:    dirTree,
 		Params:     params,
 		SnapshotID: snapshotID,
+		Curpath:    "/snapshots",
 	}, err
 }

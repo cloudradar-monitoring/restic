@@ -374,8 +374,10 @@ func runSnapshotsHttp(w http.ResponseWriter, r *http.Request, serverConfig serve
 	return struct {
 		Snapshots []Snapshot
 		Params    map[string]string
+		Curpath   string
 	}{
 		Snapshots: snapshots,
 		Params:    request.GetParams(r),
+		Curpath:   "/snapshots",
 	}, err
 }

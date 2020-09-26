@@ -52,6 +52,12 @@ var externalLinks = []externalLink{
 		name: "bootstrapjs",
 		typ:  js,
 	},
+	{
+		link: "https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js",
+		hash: "sha384-f7fade1531805bcdc45b6443bb64b454a688cdaa771faea5647f353e86251616c653ee81669e86ee78aeef7e5293b94d",
+		name: "popperjs",
+		typ:  js,
+	},
 }
 
 // This program generates go files from html templates. It can be invoked by running `go generate internal/web/template/gen/main.go`
@@ -86,24 +92,26 @@ func main() {
 
 		templateNameSanitized := sanitiseTemplateNameVariable(el.name)
 
-		var templateReader io.Reader
+		bodyStr := string(body)
+
+		templateFormat := ""
 		if el.typ == css {
-			templateFormat := `{{define "%s"}}
+			templateFormat = `{{define "%s"}}
 <style type="text/css">%s</style>
 {{end}}
 `
-			templateReader = bytes.NewBufferString(fmt.Sprintf(templateFormat, el.name, string(body)))
 		} else if el.typ == js {
-			templateFormat := `{{define "%s"}}
+			templateFormat = `{{define "%s"}}
 <script type="application/javascript">%s</script>
 {{end}}
 `
-			templateReader = bytes.NewBufferString(fmt.Sprintf(templateFormat, el.name, string(body)))
-		} else {
-			templateReader = bytes.NewBuffer(body)
 		}
 
-		err = generateTemplateFile(templateReader, templateNameSanitized)
+		if templateFormat != "" {
+			bodyStr = fmt.Sprintf(templateFormat, el.name, bodyStr)
+		}
+
+		err = generateTemplateFile(bytes.NewBufferString(bodyStr), templateNameSanitized)
 		die(err)
 
 		templateNames[el.name] = templateNameSanitized
@@ -175,6 +183,9 @@ func generateTemplateFile(reader io.Reader, name string) error {
 	if err != nil {
 		return err
 	}
+	bodyStr := string(content)
+
+	bodyStr = strings.Replace(bodyStr, "`", "` + \"`\" + `", -1)
 
 	t, err := template.ParseFiles("template.gohtml")
 	if err != nil {
@@ -184,7 +195,7 @@ func generateTemplateFile(reader io.Reader, name string) error {
 	err = t.Execute(f, struct {
 		Content string
 		Name    string
-	}{Content: string(content), Name: name})
+	}{Content: bodyStr, Name: name})
 	if err != nil {
 		return err
 	}

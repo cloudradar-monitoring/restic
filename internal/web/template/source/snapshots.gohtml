@@ -1,56 +1,77 @@
 {{define "content"}}
-    <h1>Snapshots</h1>
-    <form method="get">
-        <div class="col-50 pad10">
-            <input class="mt-10" type="text" id="host" name="host" placeholder="Host" value="{{if .Params.host }}{{.Params.host}}{{end}}">
-            <small id="emailHelp" class="field-description">
-                For multiple use comma separated values
-            </small>
-            <input class="mt-10" type="text" id="path" name="path" placeholder="Path" value="{{if .Params.path }}{{.Params.path}}{{end}}">
-            <small id="emailHelp" class="field-description">
-                For multiple use comma separated values
-            </small>
-        </div>
-        <div class="col-50 pad10">
-            <input class="mt-10" type="text" id="tag" name="tag" placeholder="Tag" value="{{if .Params.tag }}{{.Params.tag}}{{end}}">
-            <div id="emailHelp" class="field-description">
-                For multiple use comma separated values
+    <h1 class="display-4">Snapshots</h1>
+    <form class="row" method="get">
+        <div class="col-4">
+            <div class="form-group mb-1">
+                <label for="host" class="m-0">Host</label>
+                <input class="form-control form-control-sm" id="host" name="host" type="text"
+                       value="{{if .Params.host }}{{.Params.host}}{{end}}">
+                <small id="hostHelp" class="form-text text-muted">
+                    For multiple use comma separated values
+                </small>
             </div>
-            <label class="mt-10">
-                Last
-                <input type="checkbox" name="last" {{if .Params.last }} checked="checked" {{end}}>
-            </label>
-            <div class="clear"></div>
-            <a href="/snapshots" class="float-right button">Reset</a>
-            <input type="submit" value="Submit" class="float-right button mr-5">
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" id="last"
+                       name="last" {{if .Params.last }} checked="checked" {{end}}>
+                <label class="form-check-label" for="last">
+                    Last
+                </label>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-group mb-1">
+                <label for="path" class="m-0">Path</label>
+                <input class="form-control form-control-sm" type="text" id="path" name="path"
+                       value="{{if .Params.path }}{{.Params.path}}{{end}}">
+                <small id="pathHelp" class="form-text text-muted">
+                    For multiple use comma separated values
+                </small>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-group mb-1">
+                <label for="tag" class="m-0">Tag</label>
+                <input class="form-control form-control-sm" id="tag" name="tag" type="text"
+                       value="{{if .Params.tag }}{{.Params.tag}}{{end}}">
+                <small id="passwordHelpBlock" class="form-text text-muted">
+                    For multiple use comma separated values
+                </small>
+            </div>
+            <button type="submit" class="btn btn-primary float-right">Submit</button>
+            <a href="/snapshots" class="btn btn-primary float-right mr-1">Reset</a>
         </div>
     </form>
-    <table id="customers">
-        <tr>
-            <th>ID</th>
-            <th>Time</th>
-            <th>Host</th>
-            <th>Tags</th>
-            <th>Paths</th>
-        </tr>
-        {{range $snapshot := .Snapshots}}
-            <tr>
-                <td><a href="/ls?long=1&id={{$snapshot.ShortID}}">{{$snapshot.ShortID}}</a></td>
-                <td>{{$snapshot.Snapshot.Time.Format "2006-01-02 15:04:05"}}</td>
-                <td>{{$snapshot.Snapshot.Hostname}}</td>
-                <td>
-                    {{if $snapshot.Snapshot.Tags }}
-                        {{ joinStrings $snapshot.Snapshot.Tags "," }}
-                    {{end}}
-                </td>
-                <td>
-                    {{if $snapshot.Snapshot.Paths }}
-                        {{range $path := $snapshot.Snapshot.Paths}}
-                            <a href="/ls?long=1&id={{ $snapshot.ShortID }}&path={{ escapeUrl $path }}">{{ $path }}</a> <br>
-                        {{end}}
-                    {{end}}
-                </td>
-            </tr>
-        {{end}}
-    </table>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <table class="table table-striped table-bordered">
+                <tr class="table-success">
+                    <th>ID</th>
+                    <th>Time</th>
+                    <th>Host</th>
+                    <th>Tags</th>
+                    <th>Paths</th>
+                </tr>
+                {{range $snapshot := .Snapshots}}
+                    <tr>
+                        <td><a href="/ls?long=1&id={{$snapshot.ShortID}}">{{$snapshot.ShortID}}</a></td>
+                        <td>{{$snapshot.Snapshot.Time.Format "2006-01-02 15:04:05"}}</td>
+                        <td>{{$snapshot.Snapshot.Hostname}}</td>
+                        <td>
+                            {{if $snapshot.Snapshot.Tags }}
+                                {{ joinStrings $snapshot.Snapshot.Tags "," }}
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if $snapshot.Snapshot.Paths }}
+                                {{range $path := $snapshot.Snapshot.Paths}}
+                                    <a href="/ls?long=1&id={{ $snapshot.ShortID }}&path={{ escapeUrl $path }}">{{ $path }}</a>
+                                    <br>
+                                {{end}}
+                            {{end}}
+                        </td>
+                    </tr>
+                {{end}}
+            </table>
+        </div>
+    </div>
 {{end}}

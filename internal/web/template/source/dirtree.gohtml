@@ -1,13 +1,13 @@
-<li>
-    {{ if .Node.IsDir }}
-        <input type="checkbox"/>
-        <span>{{ .Node.Name }}</span>
-    {{ else }}
-        <span><a href="/dump?id={{.Data.Params.id}}&path={{ .Node.Path }}&size={{ .Node.Size }}">{{ .Node.Name }}</a></span>
-    {{ end }}
-    {{ if .Node.IsDir }}
-        <ul>
+{{ if .Node.IsDir }}
+    <li>
+        <label for="{{ .Node.Name }}">{{ .Node.Name }}</label>
+        <input type="checkbox" checked="" id="{{ .Node.Name }}">
+        <ol>
             {{ .Node.Nodes.Render .Data }}
-        </ul>
-    {{ end }}
-</li>
+        </ol>
+    </li>
+{{ else }}
+    <li class="file">
+        <a href="/dump?id={{.Data.Params.id}}&path={{ .Node.Path }}&size={{ .Node.Size }}">{{ .Node.Name }}</a>
+    </li>
+{{ end }}

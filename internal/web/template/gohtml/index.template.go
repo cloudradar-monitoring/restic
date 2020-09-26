@@ -3,6 +3,6 @@
 package gohtml
 
 var index = `{{define "content"}}
-    <p class="red">Home page</p>
+    <h1 class="display-4">This is a http port for restic cli commands</h1>
 {{end}}
 `
