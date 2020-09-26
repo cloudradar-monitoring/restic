@@ -13,5 +13,6 @@ var TemplatesMap = map[string]string{
 	"jqueryjs":      jqueryjs,
 	"js":            js,
 	"ls":            ls,
+	"popperjs":      popperjs,
 	"snapshots":     snapshots,
 }

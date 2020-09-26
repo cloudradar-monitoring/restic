@@ -1,35 +1,43 @@
 {{define "content"}}
-    <h1>Snapshot contents {{.SnapshotID}}</h1>
-
-    <div class="mt-2">
-        <form method="get">
-            <div class="col-50 mt-10">
-                <input type="hidden" value="{{ .Params.id }}" name="id">
-                <label>
+    <h1 class="display-4">Snapshot contents {{.SnapshotID}}</h1>
+    <form class="row" method="get">
+        <div class="col-4">
+            <input type="hidden" value="{{ .Params.id }}" name="id">
+            <div class="form-group mb-1">
+                <label for="path" class="m-0">Path</label>
+                <input class="form-control form-control-sm" type="text" id="path" name="path"
+                       value="{{if .Params.path }}{{.Params.path}}{{end}}">
+                <small id="pathHelp" class="form-text text-muted">
+                    For multiple use comma separated values
+                </small>
+            </div>
+            <div class="form-group mb-1">
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <a href="/snapshots" class="btn btn-primary mr-1">Reset</a>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" id="long"
+                       name="long" {{if .Params.long }} checked="checked" {{end}}>
+                <label class="form-check-label" for="long">
                     Long
-                    <input type="checkbox" name="long" {{if .Params.long }} checked="checked" {{end}}>
                 </label>
-                <label>
+            </div>
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" id="recursive"
+                       name="recursive" {{if .Params.recursive }} checked="checked" {{end}}>
+                <label class="form-check-label" for="long">
                     Recursive
-                    <input type="checkbox" name="recursive" {{if .Params.recursive }} checked="checked" {{end}}>
                 </label>
-                <div class="mt-10">
-                    <label for="path">Path</label>
-                    <input type="text" id="tag" name="path" placeholder="path"
-                           value="{{if .Params.path }}{{.Params.path}}{{end}}">
-                </div>
             </div>
-            <div class="clear"></div>
-            <div class="mt-10">
-                <a href="/snapshots" class="button mr-5">Reset</a>
-                <input type="submit" value="Submit" class="button">
-            </div>
-        </form>
-    </div>
-    <div class="clear"></div>
-    <div class="dirs mt-10">
-        <ul id="tree">
-            {{  .DirTree.Render . }}
-        </ul>
+        </div>
+    </form>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <ol class="tree">
+                {{  .DirTree.Render . }}
+            </ol>
+        </div>
     </div>
 {{end}}
