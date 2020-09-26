@@ -75,7 +75,9 @@ type WebServer struct {
 }
 
 func (ws *WebServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	err := render.RenderWithLayout("index", w, "")
+	err := render.RenderWithLayout("index", w, struct{ Curpath string }{
+		Curpath: "/",
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
