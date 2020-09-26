@@ -35,7 +35,7 @@ func (ns Nodes) Find(name string) (node Node, found bool) {
 }
 
 func (n *Nodes) Add(pathItem PathItem) {
-	pathParts := strings.Split(pathItem.Path, string(os.PathSeparator))
+	pathParts := strings.Split(pathItem.Path, "/")
 
 	curNodes := n
 	for i, pathPart := range pathParts {
