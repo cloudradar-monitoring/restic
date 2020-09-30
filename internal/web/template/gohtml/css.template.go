@@ -136,6 +136,20 @@ var css = `{{define "css"}}
     }
     ol.tree li input:checked + ol > li { display: block; margin: 0 0 0.125em;  /* 2px */}
     ol.tree li input:checked + ol > li:last-child { margin: 0 0 0.063em; /* 1px */ }
+
+    a.dir-tree-expanded {
+        position: absolute;
+        top: 3px;
+        left: 0;
+        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAURJREFUeNpi/P//PwMlgImBQkCxASwwRlLLKwYmJqZgRkbGbiBXEYva+0Dvlv7792/tvBoxTAO+fv0MororE6UU9VU5MHRfvP1DsX3+M5DhaxkYxDC98ObNGxBW1FVmY/j16xcYu6SdYvjw4QPDixcvGGSEvoLlQeqweuHdu7dg+vfv32D85ctXsNijR4/B4hwcnHA1WA348uUbmP779y+DUchOuIKQsltgetsUE7garAb8/w9h/vz5h+H0Sk8w2yRsN8OZVa5g9ocPn+BqsBrAzs4PdQEzw48ff+Fi375B2Gxs3HA1WNPB45NlDNzcIvfPXv8LVMwJxmdWOcDZF2//A8uD1GF1wefXZ8Q+Pt42oWN+VBED41d5DKv+/30IlJ8IVCcF5D2DCTPC8gIwAXEDKT4Qk0Di+wzU8xnDgKGbmQACDAAtTZadqmiADQAAAABJRU5ErkJggg==) 0px 0 no-repeat;
+        display: block;
+        height: 13px;
+        width: 13px;
+    }
+
+    a.dir-tree-expanded:hover {
+        text-decoration: none;
+    }
 </style>
 {{end}}
 `

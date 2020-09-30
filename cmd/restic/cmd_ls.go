@@ -275,7 +275,12 @@ func runLsHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Confi
 	}
 	params["id"] = snapshotID
 
-	err = runLs(options, severGlobalOptions, []string{snapshotID})
+	dir := r.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "/"
+	}
+
+	err = runLs(options, severGlobalOptions, []string{snapshotID, dir})
 	if err != nil {
 		return
 	}
@@ -317,16 +322,24 @@ func runLsHttp(w http.ResponseWriter, r *http.Request, serverConfig server.Confi
 	}
 
 	return struct {
-		LsSnapshot lsSnapshot
-		DirTree    render.Nodes
-		Params     map[string]string
-		SnapshotID string
-		Curpath    string
+		LsSnapshot   lsSnapshot
+		DirTree      render.Nodes
+		Params       map[string]string
+		SnapshotID   string
+		Curpath      string
+		Url          *url.URL
+		NodesContext render.NodesContext
 	}{
 		LsSnapshot: snapshot,
 		DirTree:    dirTree,
 		Params:     params,
 		SnapshotID: snapshotID,
 		Curpath:    "/snapshots",
+		NodesContext: render.NodesContext{
+			Params:     params,
+			SnapshotID: snapshotID,
+			Curpath:    "",
+			Url:        r.URL,
+		},
 	}, err
 }

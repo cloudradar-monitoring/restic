@@ -113,10 +113,11 @@ func handleError(err error, w http.ResponseWriter, status int) {
 	fmt.Printf("failed to execute: %v\n", err)
 
 	err = render.RenderWithLayout("error", w, struct {
-		Err    error
-		Status int
-		Title  string
-	}{Err: err, Status: status, Title: title})
+		Err     error
+		Status  int
+		Title   string
+		Curpath string
+	}{Err: err, Status: status, Title: title, Curpath: "/"})
 	if err != nil {
 		http.Error(w, err.Error(), status)
 		return
