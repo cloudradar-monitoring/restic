@@ -4,6 +4,7 @@ package gohtml
 
 var ls = `{{define "content"}}
     <h1 class="display-4">Snapshot contents {{.SnapshotID}}</h1>
+    <h2>{{.Params.dir}}</h2>
     <form class="row" method="get">
         <div class="col-4">
             <input type="hidden" value="{{ .Params.id }}" name="id">
@@ -40,7 +41,7 @@ var ls = `{{define "content"}}
     <div class="row mt-4">
         <div class="col-md-12">
             <ol class="tree">
-                {{  .DirTree.Render . }}
+                {{  .DirTree.Render .NodesContext }}
             </ol>
         </div>
     </div>
