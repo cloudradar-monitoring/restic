@@ -19,8 +19,7 @@ import (
 type Node interface{}
 
 type Snapshot struct {
-	Nodes  map[string]Node
-	treeID restic.ID
+	Nodes map[string]Node
 }
 
 type File struct {
@@ -443,7 +442,7 @@ func TestRestorerRelative(t *testing.T) {
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
 
-			cleanup = fs.TestChdir(t, tempdir)
+			cleanup = rtest.Chdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)

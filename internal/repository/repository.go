@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -28,7 +29,8 @@ type Repository struct {
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
-	restic.Cache
+	Cache   *cache.Cache
+
 	noAutoIndexUpdate bool
 
 	treePM *packerManager
@@ -47,6 +49,8 @@ func New(be restic.Backend) *Repository {
 	return repo
 }
 
+// DisableAutoIndexUpdate deactives the automatic finalization and upload of new
+// indexes once these are full
 func (r *Repository) DisableAutoIndexUpdate() {
 	r.noAutoIndexUpdate = true
 }
@@ -57,7 +61,7 @@ func (r *Repository) Config() restic.Config {
 }
 
 // UseCache replaces the backend with the wrapped cache.
-func (r *Repository) UseCache(c restic.Cache) {
+func (r *Repository) UseCache(c *cache.Cache) {
 	if c == nil {
 		return
 	}
@@ -479,7 +483,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 
 	// run workers on ch
 	wg.Go(func() error {
-		return RunWorkers(ctx, loadIndexParallelism, worker, final)
+		return RunWorkers(loadIndexParallelism, worker, final)
 	})
 
 	// receive decoded indexes
@@ -550,7 +554,7 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 
 	// use readahead
 	debug.Log("using readahead")
-	cache := r.Cache.(*cache.Cache)
+	cache := r.Cache
 	cache.PerformReadahead = func(h restic.Handle) bool {
 		if h.Type != restic.PackFile {
 			debug.Log("no readahead for %v, is not a pack file", h)
@@ -611,7 +615,7 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string) error {
+func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) error {
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
@@ -623,6 +627,9 @@ func (r *Repository) Init(ctx context.Context, password string) error {
 	cfg, err := restic.CreateConfig()
 	if err != nil {
 		return err
+	}
+	if chunkerPolynomial != nil {
+		cfg.ChunkerPolynomial = *chunkerPolynomial
 	}
 
 	return r.init(ctx, password, cfg)

@@ -345,17 +345,16 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 	// get file info and run remaining select functions that require file information
 	fi, err := arch.FS.Lstat(target)
-	if !arch.Select(abstarget, fi) {
-		debug.Log("%v is excluded", target)
-		return FutureNode{}, true, nil
-	}
-
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
 		err = arch.error(abstarget, fi, err)
 		if err != nil {
 			return FutureNode{}, false, errors.Wrap(err, "Lstat")
 		}
+		return FutureNode{}, true, nil
+	}
+	if !arch.Select(abstarget, fi) {
+		debug.Log("%v is excluded", target)
 		return FutureNode{}, true, nil
 	}
 
@@ -414,12 +413,12 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 				_ = file.Close()
 				return fn, false, nil
-			} else {
-				debug.Log("%v hasn't changed, but contents are missing!", target)
-				// There are contents missing - inform user!
-				err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
-				arch.error(abstarget, fi, err)
 			}
+
+			debug.Log("%v hasn't changed, but contents are missing!", target)
+			// There are contents missing - inform user!
+			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+			arch.error(abstarget, fi, err)
 		}
 
 		fn.isFile = true

@@ -12,7 +12,7 @@ func DeleteFiles(gopts GlobalOptions, repo restic.Repository, fileList restic.ID
 	deleteFiles(gopts, true, repo, fileList, fileType)
 }
 
-// DeleteFiles deletes the given fileList of fileType in parallel
+// DeleteFilesChecked deletes the given fileList of fileType in parallel
 // if an error occurs, it will cancel and return this error
 func DeleteFilesChecked(gopts GlobalOptions, repo restic.Repository, fileList restic.IDSet, fileType restic.FileType) error {
 	return deleteFiles(gopts, false, repo, fileList, fileType)
@@ -48,7 +48,7 @@ func deleteFiles(gopts GlobalOptions, ignoreError bool, repo restic.Repository, 
 						return err
 					}
 				}
-				if !gopts.JSON && gopts.verbosity >= 2 {
+				if !gopts.JSON && gopts.verbosity > 2 {
 					Verbosef("removed %v\n", h)
 				}
 				bar.Report(restic.Stat{Blobs: 1})

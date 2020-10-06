@@ -21,7 +21,6 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -51,7 +50,7 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	rtest.OK(t, runInit(opts, nil))
+	rtest.OK(t, runInit(InitOptions{}, opts, nil))
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
@@ -66,7 +65,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 	gopts.stdout = ioutil.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
-		cleanup := fs.TestChdir(t, dir)
+		cleanup := rtest.Chdir(t, dir)
 		defer cleanup()
 	}
 
@@ -151,6 +150,21 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	}
 
 	err := runCheck(opts, gopts, nil)
+	return buf.String(), err
+}
+
+func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
+	buf := bytes.NewBuffer(nil)
+
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	opts := DiffOptions{
+		ShowMetadata: false,
+	}
+	err := runDiff(opts, gopts, []string{firstSnapshotID, secondSnapshotID})
 	return string(buf.Bytes()), err
 }
 
@@ -177,7 +191,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 
 	rtest.OK(t, runLs(opts, gopts, []string{snapshotID}))
 
-	return strings.Split(string(buf.Bytes()), "\n")
+	return strings.Split(buf.String(), "\n")
 }
 
 func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
@@ -253,7 +267,6 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		"Expected 1 snapshot to be kept, got %v", len(forgets[0].Keep))
 	rtest.Assert(t, len(forgets[0].Remove) == 2,
 		"Expected 2 snapshots to be removed, got %v", len(forgets[0].Remove))
-	return
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions) {
@@ -450,7 +463,7 @@ func TestBackupExclude(t *testing.T) {
 		f, err := os.Create(fp)
 		rtest.OK(t, err)
 
-		fmt.Fprintf(f, filename)
+		fmt.Fprint(f, filename)
 		rtest.OK(t, f.Close())
 	}
 
@@ -602,8 +615,10 @@ func TestBackupTags(t *testing.T) {
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	copyOpts := CopyOptions{
-		Repo:     dstGopts.Repo,
-		password: dstGopts.password,
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:     dstGopts.Repo,
+			password: dstGopts.password,
+		},
 	}
 
 	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))
@@ -713,6 +728,36 @@ func TestCopyIncremental(t *testing.T) {
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
 		len(copiedSnapshotIDs), len(snapshotIDs))
+}
+
+func TestInitCopyChunkerParams(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testRunInit(t, env2.gopts)
+
+	initOpts := InitOptions{
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:     env2.gopts.Repo,
+			password: env2.gopts.password,
+		},
+	}
+	rtest.Assert(t, runInit(initOpts, env.gopts, nil) != nil, "expected invalid init options to fail")
+
+	initOpts.CopyChunkerParameters = true
+	rtest.OK(t, runInit(initOpts, env.gopts, nil))
+
+	repo, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	otherRepo, err := OpenRepository(env2.gopts)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, repo.Config().ChunkerPolynomial == otherRepo.Config().ChunkerPolynomial,
+		"expected equal chunker polynomials, got %v expected %v", repo.Config().ChunkerPolynomial,
+		otherRepo.Config().ChunkerPolynomial)
 }
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
@@ -989,7 +1034,7 @@ func TestRestoreLatest(t *testing.T) {
 
 	// chdir manually here so we can get the current directory. This is not the
 	// same as the temp dir returned by ioutil.TempDir() on darwin.
-	back := fs.TestChdir(t, filepath.Dir(env.testdata))
+	back := rtest.Chdir(t, filepath.Dir(env.testdata))
 	defer back()
 
 	curdir, err := os.Getwd()
@@ -1105,14 +1150,14 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
 
 	f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
-	fi, err := os.Stat(f1)
+	_, err := os.Stat(f1)
 	rtest.OK(t, err)
 
 	// restore with filter "*", this should restore meta data on everything.
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
 	f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
-	fi, err = os.Stat(f2)
+	fi, err := os.Stat(f2)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, fi.ModTime() == time.Unix(0, 0),
@@ -1356,6 +1401,81 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	t.Log(err)
 }
 
+// Test repos for edge cases
+func TestEdgeCaseRepos(t *testing.T) {
+	opts := CheckOptions{}
+
+	// repo where index is completely missing
+	// => check and prune should fail
+	t.Run("no-index", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-index-missing.tar.gz", opts, false, false)
+	})
+
+	// repo where an existing and used blob is missing from the index
+	// => check should fail, prune should heal this
+	t.Run("index-missing-blob", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-index-missing-blob.tar.gz", opts, false, true)
+	})
+
+	// repo where a blob is missing
+	// => check and prune should fail
+	t.Run("no-data", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-data-missing.tar.gz", opts, false, false)
+	})
+
+	// repo where data exists that is not referenced
+	// => check and prune should fully work
+	t.Run("unreferenced-data", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-unreferenced-data.tar.gz", opts, true, true)
+	})
+
+	// repo where an obsolete index still exists
+	// => check and prune should fully work
+	t.Run("obsolete-index", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-obsolete-index.tar.gz", opts, true, true)
+	})
+
+	// repo which contains mixed (data/tree) packs
+	// => check and prune should fully work
+	t.Run("mixed-packs", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-mixed.tar.gz", opts, true, true)
+	})
+
+	// repo which contains duplicate blobs
+	// => checking for unused data should report an error and prune resolves the
+	// situation
+	opts = CheckOptions{
+		ReadData:    true,
+		CheckUnused: true,
+	}
+	t.Run("duplicates", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-duplicates.tar.gz", opts, false, true)
+	})
+}
+
+func testEdgeCaseRepo(t *testing.T, tarfile string, options CheckOptions, checkOK, pruneOK bool) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", tarfile)
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	if checkOK {
+		testRunCheck(t, env.gopts)
+	} else {
+		rtest.Assert(t, runCheck(options, env.gopts, nil) != nil,
+			"check should have reported an error")
+	}
+
+	if pruneOK {
+		testRunPrune(t, env.gopts)
+		testRunCheck(t, env.gopts)
+	} else {
+		rtest.Assert(t, runPrune(env.gopts) != nil,
+			"prune should have reported an error")
+	}
+}
+
 func TestHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)
@@ -1417,11 +1537,7 @@ func linksEqual(source, dest map[uint64][]string) bool {
 		}
 	}
 
-	if len(dest) != 0 {
-		return false
-	}
-
-	return true
+	return len(dest) == 0
 }
 
 func linkEqual(source, dest []string) bool {
@@ -1476,4 +1592,92 @@ func TestQuietBackup(t *testing.T) {
 		"expected two snapshots, got %v", snapshotIDs)
 
 	testRunCheck(t, env.gopts)
+}
+
+func copyFile(dst string, src string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+var diffOutputRegexPatterns = []string{
+	"-.+modfile",
+	"M.+modfile1",
+	"\\+.+modfile2",
+	"\\+.+modfile3",
+	"\\+.+modfile4",
+	"-.+submoddir",
+	"-.+submoddir.subsubmoddir",
+	"\\+.+submoddir2",
+	"\\+.+submoddir2.subsubmoddir",
+	"Files: +2 new, +1 removed, +1 changed",
+	"Dirs: +3 new, +2 removed",
+	"Data Blobs: +2 new, +1 removed",
+	"Added: +7[0-9]{2}\\.[0-9]{3} KiB",
+	"Removed: +2[0-9]{2}\\.[0-9]{3} KiB",
+}
+
+func TestDiff(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	datadir := filepath.Join(env.base, "testdata")
+	testdir := filepath.Join(datadir, "testdir")
+	subtestdir := filepath.Join(testdir, "subtestdir")
+	testfile := filepath.Join(testdir, "testfile")
+
+	rtest.OK(t, os.Mkdir(testdir, 0755))
+	rtest.OK(t, os.Mkdir(subtestdir, 0755))
+	rtest.OK(t, appendRandomData(testfile, 256*1024))
+
+	moddir := filepath.Join(datadir, "moddir")
+	submoddir := filepath.Join(moddir, "submoddir")
+	subsubmoddir := filepath.Join(submoddir, "subsubmoddir")
+	modfile := filepath.Join(moddir, "modfile")
+	rtest.OK(t, os.Mkdir(moddir, 0755))
+	rtest.OK(t, os.Mkdir(submoddir, 0755))
+	rtest.OK(t, os.Mkdir(subsubmoddir, 0755))
+	rtest.OK(t, copyFile(modfile, testfile))
+	rtest.OK(t, appendRandomData(modfile+"1", 256*1024))
+
+	snapshots := make(map[string]struct{})
+	opts := BackupOptions{}
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	snapshots, firstSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+
+	rtest.OK(t, os.Rename(modfile, modfile+"3"))
+	rtest.OK(t, os.Rename(submoddir, submoddir+"2"))
+	rtest.OK(t, appendRandomData(modfile+"1", 256*1024))
+	rtest.OK(t, appendRandomData(modfile+"2", 256*1024))
+	rtest.OK(t, os.Mkdir(modfile+"4", 0755))
+
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	snapshots, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+
+	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
+	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
+
+	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	if err != nil {
+		t.Fatalf("expected no error from diff for test repository, got %v", err)
+	}
+
+	for _, pattern := range diffOutputRegexPatterns {
+		r, err := regexp.Compile(pattern)
+		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
+		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
+	}
 }

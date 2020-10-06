@@ -125,7 +125,6 @@ func TestTestCreateFiles(t *testing.T) {
 					if _, ok := item.(TestSymlink); ok {
 						continue
 					}
-					continue
 				}
 
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
@@ -496,7 +495,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 			createFilesAt(t, targetDir, test.files)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			repo, cleanup := repository.TestRepository(t)

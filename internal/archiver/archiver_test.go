@@ -803,7 +803,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				chdir = filepath.Join(chdir, test.chdir)
 			}
 
-			back := fs.TestChdir(t, chdir)
+			back := restictest.Chdir(t, chdir)
 			defer back()
 
 			fi, err := fs.Lstat(test.target)
@@ -832,7 +832,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
@@ -910,7 +910,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
@@ -1063,7 +1063,7 @@ func TestArchiverSaveTree(t *testing.T) {
 
 			arch.runWorkers(ctx, &tmb)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1353,7 +1353,7 @@ func TestArchiverSnapshot(t *testing.T) {
 				chdir = filepath.Join(chdir, filepath.FromSlash(test.chdir))
 			}
 
-			back := fs.TestChdir(t, chdir)
+			back := restictest.Chdir(t, chdir)
 			defer back()
 
 			var targets []string
@@ -1458,10 +1458,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Ext(item) == ".txt" {
-					return false
-				}
-				return true
+				return filepath.Ext(item) != ".txt"
 			},
 		},
 		{
@@ -1485,10 +1482,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Base(item) == "subdir" {
-					return false
-				}
-				return true
+				return filepath.Base(item) != "subdir"
 			},
 		},
 		{
@@ -1513,7 +1507,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Select = test.selFn
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			targets := []string{"."}
@@ -1620,7 +1614,7 @@ func TestArchiverParent(t *testing.T) {
 
 			arch := New(repo, testFS, Options{})
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			_, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
@@ -1780,7 +1774,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1921,7 +1915,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			testFS := &TrackFS{
@@ -1990,13 +1984,6 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 	return snapshotID, node
 }
 
-func chmod(t testing.TB, filename string, mode os.FileMode) {
-	err := os.Chmod(filename, mode)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 // StatFS allows overwriting what is returned by the Lstat function.
 type StatFS struct {
 	fs.FS
@@ -2059,7 +2046,7 @@ func TestMetadataChanged(t *testing.T) {
 	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
 	defer cleanup()
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata
@@ -2134,7 +2121,7 @@ func TestRacyFileSwap(t *testing.T) {
 	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
 	defer cleanup()
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata of current folder
