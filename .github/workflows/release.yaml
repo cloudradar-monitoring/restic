@@ -54,3 +54,5 @@ jobs:
           goarch: ${{ matrix.goarch }}
           goversion: "1.14"
           build_command: go run build.go --goos ${{ matrix.goos }} --goarch ${{ matrix.goarch }}
+          build_flags: ''
+          ldflags: "-v"
